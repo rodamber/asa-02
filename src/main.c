@@ -15,9 +15,8 @@ typedef struct node
 
 typedef struct
 {
-    int      distance;
+    int      cost;
     unsigned key;
-    unsigned predecessor;
     node     *head;
 } sllist;
 
@@ -88,25 +87,21 @@ graph_free(GRAPH g, size_t v)
  * Bellman-Ford Algorithm
  ******************************************************************************/
 
-#define NIL 0
-
 void
 initialize_single_source(GRAPH g, size_t v, unsigned src)
 {
     int i;
     for ( i = 0; i < v; i++ )
     {
-        g[i]->distance    = INT_MAX;
-        g[i]->predecessor = NIL;
+        g[i]->cost = INT_MAX;
     }
-    g[src - 1]->distance = 0;
+    g[src - 1]->cost = 0;
 }
 
-#define RELAX(u, v, w)                    \
-    if (v->distance > u->distance + w)    \
-    {                                     \
-        v->distance    = u->distance + w; \
-        v->predecessor = u->key;          \
+#define RELAX(u, v, w)         \
+    if (v->cost > u->cost + w) \
+    {                          \
+        v->cost = u->cost + w; \
     }
 
 void
@@ -129,9 +124,9 @@ bellman_ford(GRAPH g, size_t v, unsigned src)
     {
         for ( node *n = g[i]->head; n; n = n->next )
         {
-            if ( g[n->key - 1]->distance > g[i]->distance + n->weight )
+            if ( g[n->key - 1]->cost > g[i]->cost + n->weight )
             {
-                g[n->key - 1]->distance = INT_MIN;
+                g[i]->cost = INT_MIN;
             }
         }
     }
@@ -140,6 +135,8 @@ bellman_ford(GRAPH g, size_t v, unsigned src)
 /*******************************************************************************
  * Main
  ******************************************************************************/
+
+#define WEIGHT_MAX_DIGITS 10
 
 int
 main(void)
@@ -158,16 +155,13 @@ main(void)
     for ( i = 0; i < C; i++ )
     {
         unsigned u, v;
-        int      w;
-        char     sign;
+        char *w = malloc( ( WEIGHT_MAX_DIGITS + 1 )* sizeof (char) );
 
-        if ( scanf( "%u %u", &u, &v )      != 2 ) return -1;
-        if ( scanf( " %c%d\n", &sign, &w ) == 2 )
-        {
-            w = -w;
-        } else if ( scanf( " %d\n", &w )   != 1 ) return -1;
+        if ( scanf( "%u %u ", &u, &v ) != 2 ) return -1;
+        w = fgets(w, WEIGHT_MAX_DIGITS, stdin);
 
-        graph_insert(g, u - 1, v, w);
+        graph_insert(g, u - 1, v, strtol( w, NULL, 10 ));
+        free( w );
     }
 
     bellman_ford(g, N, H);
@@ -175,18 +169,8 @@ main(void)
     /* Print output. */
     for ( i = 0; i < N; i++ )
     {
-        char c;
-
-        switch ( g[i]->distance )
-        {
-            case INT_MIN :
-                c = 'I';
-                break;
-
-            case INT_MAX :
-                c = 'U';
-                break;
-        }
+        char c = g[i]->cost == INT_MIN ? 'I' :
+                 g[i]->cost == INT_MAX ? 'U' : '\0';
 
         if ( c == 'I' || c == 'U' )
         {
@@ -194,7 +178,7 @@ main(void)
         }
         else
         {
-            printf( "%d\n", g[i]->distance );
+            printf( "%d\n", g[i]->cost );
         }
 
     }
@@ -202,35 +186,4 @@ main(void)
     graph_free(g, N);
     return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
