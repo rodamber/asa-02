@@ -17,6 +17,7 @@ typedef struct
 {
     int      cost;
     unsigned key;
+    unsigned predecessor;
     node     *head;
 } sllist;
 
@@ -87,21 +88,29 @@ graph_free(GRAPH g, size_t v)
  * Bellman-Ford Algorithm
  ******************************************************************************/
 
+#define NIL 0
+#define OVERFLOW(A, B) \
+    ( ( A->cost == INT_MIN && B < 0 ) || \
+      ( A->cost == INT_MAX && B > 0 ) )
+
 void
 initialize_single_source(GRAPH g, size_t v, unsigned src)
 {
     int i;
     for ( i = 0; i < v; i++ )
     {
-        g[i]->cost = INT_MAX;
+        g[i]->cost        = INT_MAX;
+        g[i]->predecessor = NIL;
     }
     g[src - 1]->cost = 0;
 }
 
-#define RELAX(u, v, w)         \
-    if (v->cost > u->cost + w) \
-    {                          \
-        v->cost = u->cost + w; \
+
+#define RELAX(u, v, w)                              \
+    if ( !OVERFLOW(u, w) && v->cost > u->cost + w ) \
+    {                                               \
+        v->cost        = u->cost + w;               \
+        v->predecessor = u->key;                    \
     }
 
 void
@@ -114,22 +123,35 @@ bellman_ford(GRAPH g, size_t v, unsigned src)
     {
         for ( i = 0; i < v; i++ )
         {
-            for ( node *n = g[i]->head; n; n = n->next )
+            node *n;
+            for ( n = g[i]->head; n; n = n->next )
             {
                 RELAX( g[i], g[n->key - 1], n->weight );
             }
         }
     }
+
+    /*
+     * Apply corrections to the costs.
+     * Cost to source is always 0.
+     */
     for ( i = 0; i < v; i++ )
     {
-        for ( node *n = g[i]->head; n; n = n->next )
+        node *n;
+        for ( n = g[i]->head; n; n = n->next )
         {
             if ( g[n->key - 1]->cost > g[i]->cost + n->weight )
             {
-                g[i]->cost = INT_MIN;
+                int v = n->key;
+                do {
+                    g[v - 1]->cost = INT_MIN;
+                    v              = g[v - 1]->predecessor;
+                }
+                while (v && v != n->key && g[v - 1]->cost != INT_MIN);
             }
         }
     }
+    g[src - 1]->cost = 0;
 }
 
 /*******************************************************************************
@@ -164,6 +186,7 @@ main(void)
         free( w );
     }
 
+    /* Get shortest paths. */
     bellman_ford(g, N, H);
 
     /* Print output. */
