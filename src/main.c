@@ -31,6 +31,7 @@ sllist *new_sllist(unsigned key) {
 
 void sllist_insert(sllist *ll, unsigned key, int weight) {
         node *n   = malloc(sizeof (node));
+n->flag = 1;
         n->key    = key;
         n->weight = weight;
         n->next   = ll->head;
@@ -90,24 +91,36 @@ void initialize_single_source(GRAPH g, size_t v, unsigned src) {
         g[src]->loss = 0;
 }
 
-void relax(sllist *u, sllist *v, int w) {
+int relax(sllist *u, sllist *v, int w) {
         if ( v->loss > sum( u->loss, w ) ) {
                 v->loss        = sum( u->loss, w );
                 v->predecessor = u->key;
+                return 1;
+        } else {
+                return 0;
         }
+}
+
+void follow_and_mark_predecessor( GRAPH g, unsigned i ) {
+        if ( g[i]->predecessor != NIL && g[ g[i]->predecessor ]->loss != INT_MIN ) {
+                g[ g[i]->predecessor ]->loss = INT_MIN;
+                follow_and_mark_predecessor( g, g[i]->predecessor );
+        }
+        return;
 }
 
 void bellman_ford(GRAPH g, size_t v, unsigned src) {
         int i, j;
-        int *predecessor_chain = calloc( v, sizeof ( int ) );
+        int changes = 1;
 
         initialize_single_source(g, v, src);
 
-        for ( j = 0; j < v; j++ ) {
+        for ( j = 0; j < v && changes; j++ ) {
+                changes = 0;
                 for ( i = 0; i < v; i++ ) {
                         node *n;
                         for ( n = g[i]->head; n; n = n->next ) {
-                                relax( g[i], g[n->key], n->weight );
+                                changes = relax( g[i], g[n->key], n->weight );
                         }
                 }
         }
@@ -116,19 +129,39 @@ void bellman_ford(GRAPH g, size_t v, unsigned src) {
                 node *n;
                 for ( n = g[i]->head; n; n = n->next ) {
                         if ( g[n->key]->loss > sum( g[i]->loss, n->weight ) ) {
-                                int x = n->key;
-                                while ( predecessor_chain[x] != 1 ) {
-                                        g[x]->loss = INT_MIN;
-                                        predecessor_chain[x] = 1;
-                                        x = g[x]->predecessor;
-                                }
-                                for ( j = 0; j < v; j++ ) {
-                                        predecessor_chain[j] = 0;
+                                g[n->key]->loss = INT_MIN;
+                        }
+                }
+        }
+
+        for ( i = 0; i < v; i++ ) {
+                if ( g[i]->loss == INT_MIN ) {
+                        follow_and_mark_predecessor( g, i );
+                }
+        }
+
+/* nao esquecer de remover o atributo flag a struct node e em sllist_insert*/
+/*
+        int neg_cycles = 1;
+        while( neg_cycles ) {
+                neg_cycles = 0;
+                for ( i = 0; i < v; i++ ) {
+                        node *n;
+                        for ( n = g[i]->head; n; n = n->next ) {
+                                if ( n->flag && g[n->key]->loss > sum( g[i]->loss, n->weight ) ) {
+                                        g[n->key]->loss = INT_MIN;
+                                        g[i]->loss      = INT_MIN;
+                                        n->flag         = 0;
+
+                                        i               = v;
+                                        neg_cycles = 1;
+                                        break;
                                 }
                         }
                 }
         }
-        free( predecessor_chain );
+*/
+
 }
 
 /*******************************************************************************
