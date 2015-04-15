@@ -3,77 +3,249 @@
 #include <stdlib.h>
 
 /*******************************************************************************
- * Structs
+ * Graph implementation.
  ******************************************************************************/
 
-typedef struct node {
-int flag;
-        int         weight;
-        unsigned    key;
-        struct node *next;
-} node;
+typedef struct Vertex {
+        int             key;
+        int             visited;
+        struct Edge     *adjacent;
 
-typedef struct {
-        int      loss;
-        unsigned key;
-        unsigned predecessor;
-        node     *head;
-} sllist;
+        int             bellman_ford_cost;
+        struct Vertex   *bellman_ford_predecessor;
 
-#define GRAPH sllist **
+        int             bfs_color;
+        int             bfs_distance;
+        struct Vertex   *bfs_predecessor;
+} Vertex;
 
-sllist *new_sllist(unsigned key) {
-        sllist *ll = malloc(sizeof (sllist));
-        ll->key    = key;
-        ll->head   = NULL;
-        return ll;
+typedef struct Edge {
+        int             visited;
+        struct Edge     *adjacent;
+
+        struct Vertex   *in;
+        struct Vertex   *out;
+
+        int             bellman_ford_weight;
+} Edge;
+
+Edge *new_edge( Vertex *in, Vertex *out, Edge *adjacent ) {
+        Edge *e = malloc( sizeof( Edge ) );
+
+        e->in       = in;
+        e->out      = out;
+        e->adjacent = e;
+
+        return e;
 }
 
-void sllist_insert(sllist *ll, unsigned key, int weight) {
-        node *n   = malloc(sizeof (node));
-n->flag = 1;
-        n->key    = key;
-        n->weight = weight;
-        n->next   = ll->head;
-        ll-> head = n;
-}
+typedef struct Graph {
+        struct Vertex   **vertices;
+        size_t          size;
+} Graph;
 
-void sllist_free(sllist *ll) {
-        node *n = ll->head;
-        while (n) {
-                node *tmp = n;
-                n         = n->next;
-                free(tmp);
-        }
-        free(ll);
-}
-
-GRAPH new_graph(size_t v) {
+Graph *new_graph(size_t s) {
         int i;
-        GRAPH g = malloc( v * sizeof (sllist *) );
-        for ( i = 0; i < v; i++ ) {
-                g[i] = new_sllist( i );
+        Graph *g = malloc( sizeof ( Graph ) );
+
+        g->vertices = malloc( sizeof ( Vertex ) * s );
+        g->size     = s;
+
+        for ( i = 0; i < s; i++ ) {
+                g->vertices[i]->key      = i;
+                g->vertices[i]->adjacent = NULL;
         }
         return g;
 }
 
-void graph_insert(GRAPH g, int i, unsigned key, int weight) {
-        sllist_insert(g[i], key, weight);
+void free_graph( Graph *g ) {
+        int i;
+        for ( i = 0; i < g->size; i++ ) {
+                Edge *e = g->vertices[i]->adjacent;
+                while (e) {
+                        Edge *tmp = e;
+                        e = e->adjacent;
+                        free(tmp);
+                }
+                free( g->vertices[i] );
+        }
 }
 
-void graph_free(GRAPH g, size_t v) {
-        int i;
-        for ( i = 0; i < v; i++ ) {
-                sllist_free(g[i]);
-        }
-        free(g);
+void add_edge( Graph *g, int in, int out ) {
+        Vertex *u = g->vertices[in];
+        Vertex *v = g->vertices[out];
+        u->adjacent = new_edge( u, v, u->adjacent );
 }
 
 /*******************************************************************************
- * Bellman-Ford Algorithm
+ * Queue implementation.
  ******************************************************************************/
 
-#define NIL -1
+typedef Vertex Data;
+
+typedef struct Qnode {
+        Data            *data;
+        struct Qnode    *next;
+} Qnode;
+
+struct Qnode *new_qnode( Data *d ) {
+        Qnode *qn = malloc( sizeof ( Qnode ) );
+        qn->data  = d;
+        qn->next  = NULL;
+        return qn;
+}
+
+typedef struct Queue {
+        struct Qnode    *first;
+        struct Qnode    *last;
+} Queue;
+
+struct Queue *new_queue() {
+        Queue *q = malloc( sizeof( Queue ) );
+        q->first = NULL;
+        q->last  = NULL;
+        return q;
+}
+
+void enqueue ( Queue *q, Data *d ) {
+        Qnode *qn = new_qnode( d );
+
+        if ( q->first ) {
+                q->last->next = qn;
+                q->last       = q->last->next;
+        } else {
+                q->first = q->last = qn;
+        }
+}
+
+Data *dequeue( Queue *q ) {
+        Data  *d   = q->first->data;
+        Qnode *tmp = q->first;
+
+        q->first = q->first->next;
+        free( tmp );
+
+        if ( q->first == NULL ) {
+                q->last = NULL;
+        }
+        return d;
+}
+
+int is_empty( Queue *q ) {
+        return q->first == NULL;
+}
+
+/*******************************************************************************
+ * Breadth-First Search (Cormen, Leiserson, Rivest, and Stein, 3rd ed., p. 595).
+ ******************************************************************************/
+
+#define WHITE 0
+#define GRAY  1
+#define BLACK 2
+
+void bfs( Graph *g, Vertex *src ) {
+        int i;
+        Queue *q = new_queue();
+
+        for ( i = 0; i < g->size; i++ ) {
+                g->vertices[i]->bfs_color       = WHITE;
+                g->vertices[i]->bfs_distance    = INT_MAX; /* Hackish, but it's good enough. */
+                g->vertices[i]->bfs_predecessor = NULL;
+        }
+        src->bfs_color = GRAY;
+        src->bfs_distance = 0;
+
+        enqueue( q, src );
+        while ( !is_empty( q ) ) {
+                Vertex *u = dequeue( q );
+                Edge   *e;
+                for ( e = u->adjacent; e; e = e->adjacent ) {
+                        Vertex *v = e->out;
+                        if ( v->bfs_color == WHITE ) {
+                                v->bfs_color       = GRAY;
+                                v->bfs_distance    = u->bfs_distance + 1;
+                                v->bfs_predecessor = u;
+                        }
+                }
+                u->bfs_color = BLACK;
+        }
+        free(q);
+}
+
+/*******************************************************************************
+ * Main, where the action happens.
+ ******************************************************************************/
+
+int main(void) {
+        int i, max_erdos_n;
+        int nvertices, nedges, erdos;
+
+        Graph *g;
+        int   *erdos_ncount;
+
+        if ( scanf("%d %d\n%d", &nvertices, &nedges, &erdos) != 3 ) return -1;
+        g = new_graph( nvertices );
+
+        for ( i = 0; i < nedges; i++ ) {
+                int u, v;
+                if ( scanf("%d %d", &u, &v) != 2 ) return -1;
+                add_edge( g, u, v );
+                add_edge( g, v, u );
+        }
+
+        bfs( g, g->vertices[erdos] );
+
+        for ( i = 0, max_erdos_n = 0; i < nvertices; i++ ) {
+                if ( g->vertices[i]->bfs_distance > max_erdos_n ) {
+                        max_erdos_n = g->vertices[i]->bfs_distance;
+                }
+        }
+
+        erdos_ncount = calloc( max_erdos_n + 1, sizeof ( int ) );
+        for ( i = 0; i < nvertices; i++ ) {
+                erdos_ncount[ g->vertices[i]->bfs_distance ]++;
+        }
+
+        printf("%d\n", max_erdos_n);
+        for (i = 1; i < max_erdos_n + 1; i++) {
+                printf("%d\n", erdos_ncount[i]);
+        }
+
+        free( erdos_ncount );
+        free_graph( g );
+        return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #define IS_INFINITE(A) ( A == INT_MIN || A == INT_MAX )
 
 int sum( int a, int b ) {
@@ -81,135 +253,3 @@ int sum( int a, int b ) {
         if ( IS_INFINITE( b ) ) return b;
         return a + b;
 }
-
-void initialize_single_source(GRAPH g, size_t v, unsigned src) {
-        int i;
-        for ( i = 0; i < v; i++ ) {
-                g[i]->loss        = INT_MAX;
-                g[i]->predecessor = NIL;
-        }
-        g[src]->loss = 0;
-}
-
-int relax(sllist *u, sllist *v, int w) {
-        if ( v->loss > sum( u->loss, w ) ) {
-                v->loss        = sum( u->loss, w );
-                v->predecessor = u->key;
-                return 1;
-        } else {
-                return 0;
-        }
-}
-
-void follow_and_mark_predecessor( GRAPH g, unsigned i ) {
-        if ( g[i]->predecessor != NIL && g[ g[i]->predecessor ]->loss != INT_MIN ) {
-                g[ g[i]->predecessor ]->loss = INT_MIN;
-                follow_and_mark_predecessor( g, g[i]->predecessor );
-        }
-        return;
-}
-
-void bellman_ford(GRAPH g, size_t v, unsigned src) {
-        int i, j;
-        int changes = 1;
-
-        initialize_single_source(g, v, src);
-
-        for ( j = 0; j < v && changes; j++ ) {
-                changes = 0;
-                for ( i = 0; i < v; i++ ) {
-                        node *n;
-                        for ( n = g[i]->head; n; n = n->next ) {
-                                changes = relax( g[i], g[n->key], n->weight );
-                        }
-                }
-        }
-
-        for ( i = 0; i < v; i++ ) {
-                node *n;
-                for ( n = g[i]->head; n; n = n->next ) {
-                        if ( g[n->key]->loss > sum( g[i]->loss, n->weight ) ) {
-                                g[n->key]->loss = INT_MIN;
-                        }
-                }
-        }
-
-        for ( i = 0; i < v; i++ ) {
-                if ( g[i]->loss == INT_MIN ) {
-                        follow_and_mark_predecessor( g, i );
-                }
-        }
-
-/* nao esquecer de remover o atributo flag a struct node e em sllist_insert*/
-/*
-        int neg_cycles = 1;
-        while( neg_cycles ) {
-                neg_cycles = 0;
-                for ( i = 0; i < v; i++ ) {
-                        node *n;
-                        for ( n = g[i]->head; n; n = n->next ) {
-                                if ( n->flag && g[n->key]->loss > sum( g[i]->loss, n->weight ) ) {
-                                        g[n->key]->loss = INT_MIN;
-                                        g[i]->loss      = INT_MIN;
-                                        n->flag         = 0;
-
-                                        i               = v;
-                                        neg_cycles = 1;
-                                        break;
-                                }
-                        }
-                }
-        }
-*/
-
-}
-
-/*******************************************************************************
- * Main
- ******************************************************************************/
-
-#define WEIGHT_MAX_DIGITS 10
-
-int main(void) {
-        int i;
-        unsigned N, /* Number of locations. */
-                 C, /* Number of known costs. */
-                 H; /* Company headquarters. */
-        GRAPH g;
-
-        /* Initialization. */
-        if ( scanf( "%u %u\n%u", &N, &C, &H ) != 3 ) return -1;
-        g = new_graph(N);
-
-        /* Insertion. */
-        for ( i = 0; i < C; i++ ) {
-                unsigned u, v;
-                char *w = malloc( ( WEIGHT_MAX_DIGITS + 1 )* sizeof (char) );
-
-                if ( scanf( "%u %u ", &u, &v ) != 2 ) return -1;
-                w = fgets(w, WEIGHT_MAX_DIGITS, stdin);
-
-                graph_insert(g, u - 1, v - 1, strtol( w, NULL, 10 ));
-                free( w );
-        }
-
-        /* Get shortest paths. */
-        bellman_ford(g, N, H - 1);
-
-        /* Print output. */
-        for ( i = 0; i < N; i++ ) {
-                char c = g[i]->loss == INT_MIN ? 'I' :
-                         g[i]->loss == INT_MAX ? 'U' : '\0';
-
-                if ( c == 'I' || c == 'U' ) {
-                        printf( "%c\n", c );
-                } else {
-                        printf( "%d\n", g[i]->loss );
-                }
-
-        }
-
-        graph_free(g, N);
-        return 0;
-}
-
