@@ -180,6 +180,68 @@ void bfs( Graph *g, Vertex *src ) {
 }
 
 /*******************************************************************************
+ * Bellman-Ford single-source shortest path algorithm
+ * (modified from Cormen, Leiserson, Rivest, and Stein, 3rd ed., p. 595).
+ ******************************************************************************/
+
+#define _BF_IS_INFINITE(A) ( A == INT_MIN || A == INT_MAX )
+
+int sum( int a, int b ) {
+        if ( _BF_IS_INFINITE( a ) ) return a;
+        if ( _BF_IS_INFINITE( b ) ) return b;
+        return a + b;
+}
+
+
+void initialize_single_source( Graph *g, Vertex *src ) {
+        int i;
+        for ( i = 0; i < g->size; i++ ) {
+                g->vertices[i]->bellman_ford_cost        = INT_MAX; /* Hackish, but works. */
+                g->vertices[i]->bellman_ford_predecessor = NULL;
+        }
+        src->bellman_ford_cost = 0;
+}
+
+int relax( Edge *e ) {
+        Vertex *u = e->in;
+        Vertex *v = e->out;
+
+        if ( v->bellman_ford_cost > u->bellman_ford_cost +
+                        e->bellman_ford_weight ) {
+                v->bellman_ford_cost = u->bellman_ford_cost +
+                        e->bellman_ford_weight;
+                v->bellman_ford_predecessor = u;
+                return 1;
+        }
+        return 0; /* No changes. */
+}
+
+int bellman_ford( Graph *g, Vertex *src ) {
+        int i, j;
+        initialize_single_source( g, src );
+        for ( j = 0; j < g->size - 1; j++ ) {
+                for ( i = 0; i < g->size; i++ ) {
+                        Edge *e = g->vertices[i]->adjacent;
+                        for ( ; e; e = e->adjacent ) {
+                                relax( e );
+                        }
+                }
+        }
+        for ( i = 0; i < g->size; i++ ) {
+                Edge *e = g->vertices[i]->adjacent;
+                for ( ; e; e = e->adjacent ) {
+                        Vertex *u = e->in;
+                        Vertex *v = e->out;
+                        if ( v->bellman_ford_cost < u->bellman_ford_cost +
+                                        e->bellman_ford_weight ) {
+                                return 0;
+                        }
+                }
+        }
+        return 1;
+}
+
+/*******************************************************************************
  * Main, where the action happens.
  ******************************************************************************/
 
@@ -224,42 +286,6 @@ int fst_project(void) {
 }
 
 int main(void) {
-    return 0;
+        return 0;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#define IS_INFINITE(A) ( A == INT_MIN || A == INT_MAX )
-
-int sum( int a, int b ) {
-        if ( IS_INFINITE( a ) ) return a;
-        if ( IS_INFINITE( b ) ) return b;
-        return a + b;
-}
