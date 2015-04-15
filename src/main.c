@@ -180,7 +180,7 @@ int is_empty( Queue *q ) {
 #define GRAY  1
 #define BLACK 2
 
-void initialize_vertex( Vertex *v, void *null ) {
+void bfs_initialize_vertex( Vertex *v, void *null ) {
         v->bfs_color       = WHITE;
         v->bfs_distance    = INT_MAX; /* Hackish, but works. */
         v->bfs_predecessor = NULL;
@@ -202,7 +202,7 @@ void grayify( Edge *e, void *queue ) {
 void bfs( Graph *g, Vertex *src ) {
         Queue *q = new_queue();
 
-        foreach_vertex( g, &initialize_vertex, (void *) NULL );
+        foreach_vertex( g, &bfs_initialize_vertex, (void *) NULL );
         src->bfs_color    = GRAY;
         src->bfs_distance = 0;
 
@@ -228,54 +228,46 @@ int sum( int a, int b ) {
         return a + b;
 }
 
+void bellman_ford_initialize_vertex( Vertex *v, void *null ) {
+        v->bellman_ford_cost        = INT_MAX; /* Hackish, but works. */
+        v->bellman_ford_predecessor = NULL;
+}
 
 void initialize_single_source( Graph *g, Vertex *src ) {
-        int i;
-        for ( i = 0; i < g->size; i++ ) {
-                g->vertices[i]->bellman_ford_cost        = INT_MAX; /* Hackish, but works. */
-                g->vertices[i]->bellman_ford_predecessor = NULL;
-        }
+        foreach_vertex( g, &bellman_ford_initialize_vertex, (void *) NULL );
         src->bellman_ford_cost = 0;
 }
 
-int relax( Edge *e ) {
+void relax( Edge *e, void *null) {
         Vertex *u = e->in;
         Vertex *v = e->out;
 
-        if ( v->bellman_ford_cost > u->bellman_ford_cost +
-                        e->bellman_ford_weight ) {
-                v->bellman_ford_cost = u->bellman_ford_cost +
-                        e->bellman_ford_weight;
+        if ( v->bellman_ford_cost > u->bellman_ford_cost + e->bellman_ford_weight ) {
+                v->bellman_ford_cost = u->bellman_ford_cost + e->bellman_ford_weight;
                 v->bellman_ford_predecessor = u;
-                return 1;
         }
-        return 0; /* No changes. */
 }
 
-int bellman_ford( Graph *g, Vertex *src ) {
-        int i, j;
-        initialize_single_source( g, src );
-        for ( j = 0; j < g->size - 1; j++ ) {
-                for ( i = 0; i < g->size; i++ ) {
-                        Edge *e = g->vertices[i]->adjacent;
-                        for ( ; e; e = e->adjacent ) {
-                                relax( e );
-                        }
-                }
+void finalize_neg_cycles( Edge *e, void *null ) {
+        Vertex *u = e->in;
+        Vertex *v = e->out;
+
+        if ( v->bellman_ford_cost > u->bellman_ford_cost + e->bellman_ford_weight ) {
+                /* do something */
+                printf("There's a silly negative cycle.\n");
         }
-        for ( i = 0; i < g->size; i++ ) {
-                Edge *e = g->vertices[i]->adjacent;
-                for ( ; e; e = e->adjacent ) {
-                        Vertex *u = e->in;
-                        Vertex *v = e->out;
-                        if ( v->bellman_ford_cost < u->bellman_ford_cost +
-                                        e->bellman_ford_weight ) {
-                                return 0;
-                        }
-                }
-        }
-        return 1;
 }
+
+void bellman_ford( Graph *g, Vertex *src ) {
+        int i;
+        initialize_single_source( g, src );
+        for ( i = 0; i < g->size - 1; i++ ) {
+                foreach_edge( g, &relax, (void *) NULL );
+        }
+        foreach_edge( g, &finalize_neg_cycles, (void *) NULL );
+}
+
+
 
 /*******************************************************************************
  * Main, where the action happens.
@@ -322,7 +314,7 @@ int fst_project(void) {
 }
 
 int main(void) {
-        fst_project();
+        snd_project();
         return 0;
 }
 
