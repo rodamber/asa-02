@@ -202,23 +202,21 @@ void grayify( Edge *e, void *queue ) {
         Vertex *v = e->out;
 
         if ( v->bfs_color == WHITE ) {
-                v->bfs_color       = GRAY;
-                v->bfs_distance    = u->bfs_distance + 1;
-                v->bfs_predecessor = u;
+                v->bfs_color         = GRAY;
+                v->bfs_distance      = u->bfs_distance + 1;
+                v->bfs_predecessor   = u;
+                v->bellman_ford_cost = INT_MIN;
                 enqueue( q, v );
-
-v->bellman_ford_cost = INT_MIN;
         }
 }
 
-void bfs( Graph *g, Vertex *src ) {
+void bfs_bellman_ford( Graph *g, Vertex *src ) {
         Queue *q = new_queue();
 
         foreach_vertex( g, &bfs_initialize_vertex, (void *) NULL );
-        src->bfs_color    = GRAY;
-        src->bfs_distance = 0;
-
-src->bellman_ford_cost = INT_MIN;
+        src->bfs_color         = GRAY;
+        src->bfs_distance      = 0;
+        src->bellman_ford_cost = INT_MIN;
 
         enqueue( q, src );
         while ( !is_empty( q ) ) {
@@ -230,8 +228,10 @@ src->bellman_ford_cost = INT_MIN;
 }
 
 /*******************************************************************************
- * Bellman-Ford single-source shortest path algorithm
- * (modified from Cormen, Leiserson, Rivest, and Stein, 3rd ed., p. 595).
+ * Bellman-Ford single-source shortest path algorithm.
+ *
+ * Modified so that the shortest-path estimate of every vertex on a negative
+ * cycle or that it's predecessor-chain starts on one.
  ******************************************************************************/
 
 #define _BF_IS_INFINITE(A) ( A == INT_MIN || A == INT_MAX )
@@ -252,58 +252,59 @@ void initialize_single_source( Graph *g, Vertex *src ) {
         src->bellman_ford_cost = 0;
 }
 
-void relax( Edge *e, void *null) {
+typedef struct {
+        int changes;
+} relax_data;
+
+void relax( Edge *e, void *r_data ) {
         Vertex *u = e->in;
         Vertex *v = e->out;
 
         if ( v->bellman_ford_cost > sum( u->bellman_ford_cost, e->bellman_ford_weight ) ) {
                 v->bellman_ford_cost = sum( u->bellman_ford_cost, e->bellman_ford_weight );
                 v->bellman_ford_predecessor = u;
-        }
-}
 
-void follow_and_mark_predecessor( Vertex *v ) {
-        Vertex *u = v->bellman_ford_predecessor;
-        if ( u != NULL && u->bellman_ford_cost != INT_MIN ) {
-                u->bellman_ford_cost = INT_MIN;
-                follow_and_mark_predecessor( u );
+                ((relax_data*)r_data)->changes = 1;
         }
-        return;
 }
 
 typedef struct {
         Graph  *graph;
 } finalize_neg_cycles_data;
 
-void finalize_neg_cycles( Edge *e, void *graph_st ) {
+void finalize_neg_cycles( Edge *e, void *fnc_data) {
         Vertex *u = e->in;
         Vertex *v = e->out;
-        Graph  *g = ((finalize_neg_cycles_data*)graph_st)->graph;
+        Graph  *g = ((finalize_neg_cycles_data*)fnc_data)->graph;
 
         if ( v->bellman_ford_cost > sum( u->bellman_ford_cost, e->bellman_ford_weight) ) {
                 /* There is a negative cycle. */
                 v->bellman_ford_cost = INT_MIN;
-                bfs( g, v );
+                bfs_bellman_ford( g, v );
         }
 }
 
 void bellman_ford( Graph *g, Vertex *src ) {
         int i;
-        finalize_neg_cycles_data *fnc_data =
-                malloc( sizeof ( finalize_neg_cycles_data ) );
+        relax_data *r_data;
+        finalize_neg_cycles_data *fnc_data;
 
         initialize_single_source( g, src );
-        for ( i = 0; i < g->size - 1; i++ ) {
-                foreach_edge( g, &relax, (void *) NULL );
+
+        r_data = malloc( sizeof ( relax_data ) );
+        r_data->changes = 1;
+        for ( i = 0; i < g->size - 1 && r_data->changes; i++ ) {
+                r_data->changes = 0;
+                foreach_edge( g, &relax, (void *) r_data );
         }
 
+        fnc_data = malloc( sizeof ( finalize_neg_cycles_data ) );
         fnc_data->graph = g;
         foreach_edge( g, &finalize_neg_cycles, (void *) fnc_data );
 
+        free( r_data );
         free( fnc_data );
 }
-
-
 
 /*******************************************************************************
  * Main, where the magic happens.
@@ -328,7 +329,6 @@ int main(void) {
                 if ( scanf( "%u %u ", &u, &v ) != 2 ) return -1;
                 w = fgets(w, weight_max_digits, stdin);
 
-/* Tomar atencao a este bocado para ver se nao e muito lento. */
                 add_edge( g, u - 1, v - 1 );
                 e = get_edge( g, u - 1, v - 1 );
                 e->bellman_ford_weight = strtol( w, NULL, 10 );
