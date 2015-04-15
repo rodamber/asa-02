@@ -206,6 +206,8 @@ void grayify( Edge *e, void *queue ) {
                 v->bfs_distance    = u->bfs_distance + 1;
                 v->bfs_predecessor = u;
                 enqueue( q, v );
+
+v->bellman_ford_cost = INT_MIN;
         }
 }
 
@@ -215,6 +217,8 @@ void bfs( Graph *g, Vertex *src ) {
         foreach_vertex( g, &bfs_initialize_vertex, (void *) NULL );
         src->bfs_color    = GRAY;
         src->bfs_distance = 0;
+
+src->bellman_ford_cost = INT_MIN;
 
         enqueue( q, src );
         while ( !is_empty( q ) ) {
@@ -252,29 +256,51 @@ void relax( Edge *e, void *null) {
         Vertex *u = e->in;
         Vertex *v = e->out;
 
-        if ( v->bellman_ford_cost > u->bellman_ford_cost + e->bellman_ford_weight ) {
-                v->bellman_ford_cost = u->bellman_ford_cost + e->bellman_ford_weight;
+        if ( v->bellman_ford_cost > sum( u->bellman_ford_cost, e->bellman_ford_weight ) ) {
+                v->bellman_ford_cost = sum( u->bellman_ford_cost, e->bellman_ford_weight );
                 v->bellman_ford_predecessor = u;
         }
 }
 
-void finalize_neg_cycles( Edge *e, void *null ) {
+void follow_and_mark_predecessor( Vertex *v ) {
+        Vertex *u = v->bellman_ford_predecessor;
+        if ( u != NULL && u->bellman_ford_cost != INT_MIN ) {
+                u->bellman_ford_cost = INT_MIN;
+                follow_and_mark_predecessor( u );
+        }
+        return;
+}
+
+typedef struct {
+        Graph  *graph;
+} finalize_neg_cycles_data;
+
+void finalize_neg_cycles( Edge *e, void *graph_st ) {
         Vertex *u = e->in;
         Vertex *v = e->out;
+        Graph  *g = ((finalize_neg_cycles_data*)graph_st)->graph;
 
-        if ( v->bellman_ford_cost > u->bellman_ford_cost + e->bellman_ford_weight ) {
-                /* do something */
-                printf("There's a silly negative cycle.\n");
+        if ( v->bellman_ford_cost > sum( u->bellman_ford_cost, e->bellman_ford_weight) ) {
+                /* There is a negative cycle. */
+                v->bellman_ford_cost = INT_MIN;
+                bfs( g, v );
         }
 }
 
 void bellman_ford( Graph *g, Vertex *src ) {
         int i;
+        finalize_neg_cycles_data *fnc_data =
+                malloc( sizeof ( finalize_neg_cycles_data ) );
+
         initialize_single_source( g, src );
         for ( i = 0; i < g->size - 1; i++ ) {
                 foreach_edge( g, &relax, (void *) NULL );
         }
-        foreach_edge( g, &finalize_neg_cycles, (void *) NULL );
+
+        fnc_data->graph = g;
+        foreach_edge( g, &finalize_neg_cycles, (void *) fnc_data );
+
+        free( fnc_data );
 }
 
 
