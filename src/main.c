@@ -29,6 +29,13 @@ typedef struct Edge {
         int             bellman_ford_weight;
 } Edge;
 
+Vertex *new_vertex( int key ) {
+        Vertex *v   = malloc( sizeof ( Vertex ) );
+        v->key      = key;
+        v->adjacent = NULL;
+        return v;
+}
+
 Edge *new_edge( Vertex *in, Vertex *out, Edge *adjacent ) {
         Edge *e = malloc( sizeof( Edge ) );
 
@@ -48,12 +55,11 @@ Graph *new_graph(size_t s) {
         int i;
         Graph *g = malloc( sizeof ( Graph ) );
 
-        g->vertices = malloc( sizeof ( Vertex ) * s );
+        g->vertices = malloc( sizeof ( Vertex *) * s );
         g->size     = s;
 
         for ( i = 0; i < s; i++ ) {
-                g->vertices[i]->key      = i;
-                g->vertices[i]->adjacent = NULL;
+                g->vertices[i] = new_vertex( i );
         }
         return g;
 }
@@ -189,11 +195,11 @@ int main(void) {
         for ( i = 0; i < nedges; i++ ) {
                 int u, v;
                 if ( scanf("%d %d", &u, &v) != 2 ) return -1;
-                add_edge( g, u, v );
-                add_edge( g, v, u );
+                add_edge( g, u - 1, v - 1 );
+                add_edge( g, v - 1, u - 1 );
         }
 
-        bfs( g, g->vertices[erdos] );
+        bfs( g, g->vertices[erdos] ); /* FIXME Infinite cycle. */
 
         for ( i = 0, max_erdos_n = 0; i < nvertices; i++ ) {
                 if ( g->vertices[i]->bfs_distance > max_erdos_n ) {
@@ -212,7 +218,7 @@ int main(void) {
         }
 
         free( erdos_ncount );
-        free_graph( g );
+        /*free_graph( g ); FIXME Double free or corruption. */
         return 0;
 }
 
