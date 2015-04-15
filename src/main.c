@@ -70,17 +70,48 @@ void free_graph( Graph *g ) {
                 Edge *e = g->vertices[i]->adjacent;
                 while (e) {
                         Edge *tmp = e;
-                        e = e->adjacent;
+                        e         = e->adjacent;
                         free(tmp);
                 }
                 free( g->vertices[i] );
         }
+        free( g->vertices );
+        free( g );
 }
 
 void add_edge( Graph *g, int in, int out ) {
         Vertex *u = g->vertices[in];
         Vertex *v = g->vertices[out];
         u->adjacent = new_edge( u, v, u->adjacent );
+}
+
+Vertex *get_vertex( Graph *g, int key ) {
+        return g->vertices[key];
+}
+
+void foreach_vertex( Graph *g, void (*f)( Vertex *, void * ), void *f_data ) {
+        int i;
+        for ( i = 0; i < g->size; i++ ) {
+                f( g->vertices[i], f_data );
+        }
+}
+
+void foreach_edge( Graph *g, void (*f)( Edge *, void * ), void *f_data ) {
+        int i;
+        for ( i = 0; i < g->size; i++ ) {
+                Edge *e;
+                for ( e = g->vertices[i]->adjacent; e; e = e->adjacent ) {
+                        f( e, f_data );
+                }
+        }
+
+}
+
+void foreach_adjacent_edge( Vertex *v, void (*f)( Edge *, void * ), void *f_data ) {
+        Edge *e;
+        for ( e = v->adjacent; e; e = e->adjacent ) {
+                f( e, f_data );
+        }
 }
 
 /*******************************************************************************
@@ -149,31 +180,36 @@ int is_empty( Queue *q ) {
 #define GRAY  1
 #define BLACK 2
 
+void initialize_vertex( Vertex *v, void *null ) {
+        v->bfs_color       = WHITE;
+        v->bfs_distance    = INT_MAX; /* Hackish, but works. */
+        v->bfs_predecessor = NULL;
+}
+
+void grayify( Edge *e, void *queue ) {
+        Queue  *q = (Queue *) queue;
+        Vertex *u = e->in;
+        Vertex *v = e->out;
+
+        if ( v->bfs_color == WHITE ) {
+                v->bfs_color       = GRAY;
+                v->bfs_distance    = u->bfs_distance + 1;
+                v->bfs_predecessor = u;
+                enqueue( q, v );
+        }
+}
+
 void bfs( Graph *g, Vertex *src ) {
-        int i;
         Queue *q = new_queue();
 
-        for ( i = 0; i < g->size; i++ ) {
-                g->vertices[i]->bfs_color       = WHITE;
-                g->vertices[i]->bfs_distance    = INT_MAX; /* Hackish, but it's good enough. */
-                g->vertices[i]->bfs_predecessor = NULL;
-        }
-        src->bfs_color = GRAY;
+        foreach_vertex( g, &initialize_vertex, (void *) NULL );
+        src->bfs_color    = GRAY;
         src->bfs_distance = 0;
 
         enqueue( q, src );
         while ( !is_empty( q ) ) {
-                Vertex *u = dequeue( q );
-                Edge   *e;
-                for ( e = u->adjacent; e; e = e->adjacent ) {
-                        Vertex *v = e->out;
-                        if ( v->bfs_color == WHITE ) {
-                                v->bfs_color       = GRAY;
-                                v->bfs_distance    = u->bfs_distance + 1;
-                                v->bfs_predecessor = u;
-                                enqueue( q, v );
-                        }
-                }
+                Vertex *u    = dequeue( q );
+                foreach_adjacent_edge( u, &grayify, (void *) q);
                 u->bfs_color = BLACK;
         }
         free(q);
@@ -286,6 +322,7 @@ int fst_project(void) {
 }
 
 int main(void) {
+        fst_project();
         return 0;
 }
 
