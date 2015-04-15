@@ -85,6 +85,16 @@ void add_edge( Graph *g, int in, int out ) {
         u->adjacent = new_edge( u, v, u->adjacent );
 }
 
+Edge *get_edge( Graph *g, int in, int out ) {
+        Edge *e;
+        for ( e = g->vertices[in]->adjacent; e; e = e->adjacent ) {
+                if ( e->out->key == out ) {
+                        return e;
+                }
+        }
+        return (Edge *) NULL;
+}
+
 Vertex *get_vertex( Graph *g, int key ) {
         return g->vertices[key];
 }
@@ -270,51 +280,54 @@ void bellman_ford( Graph *g, Vertex *src ) {
 
 
 /*******************************************************************************
- * Main, where the action happens.
+ * Main, where the magic happens.
  ******************************************************************************/
 
-int fst_project(void) {
-        int i, max_erdos_n;
-        int nvertices, nedges, erdos;
-
+int main(void) {
+        int i;
+        int nlocations, ncosts, headquarters_key;
+        const int weight_max_digits = 10;
         Graph *g;
-        int   *erdos_ncount;
+        Edge  *e;
 
-        if ( scanf("%d %d\n%d", &nvertices, &nedges, &erdos) != 3 ) return -1;
-        g = new_graph( nvertices );
+        /* Initialization. */
+        if ( scanf( "%u %u\n%u", &nlocations, &ncosts, &headquarters_key ) != 3 ) return -1;
+        g = new_graph( nlocations );
 
-        for ( i = 0; i < nedges; i++ ) {
-                int u, v;
-                if ( scanf("%d %d", &u, &v) != 2 ) return -1;
+        /* Insertion. */
+        for ( i = 0; i < ncosts; i++ ) {
+                int  u, v;
+                char *w = malloc( ( weight_max_digits + 1 )* sizeof (char) );
+
+                if ( scanf( "%u %u ", &u, &v ) != 2 ) return -1;
+                w = fgets(w, weight_max_digits, stdin);
+
+/* Tomar atencao a este bocado para ver se nao e muito lento. */
                 add_edge( g, u - 1, v - 1 );
-                add_edge( g, v - 1, u - 1 );
+                e = get_edge( g, u - 1, v - 1 );
+                e->bellman_ford_weight = strtol( w, NULL, 10 );
+
+                free( w );
         }
 
-        bfs( g, g->vertices[erdos - 1] );
+        /* Get shortest paths. */
+        bellman_ford( g, get_vertex( g, headquarters_key - 1 ) );
 
-        for ( i = 0, max_erdos_n = 0; i < nvertices; i++ ) {
-                if ( g->vertices[i]->bfs_distance > max_erdos_n ) {
-                        max_erdos_n = g->vertices[i]->bfs_distance;
+        /* Print output. */
+        for ( i = 0; i < nlocations; i++ ) {
+                Vertex *v = get_vertex( g, i );
+
+                char c = v->bellman_ford_cost == INT_MIN ? 'I' :
+                         v->bellman_ford_cost == INT_MAX ? 'U' : '\0';
+
+                if ( c == 'I' || c == 'U' ) {
+                        printf( "%c\n", c );
+                } else {
+                        printf( "%d\n", v->bellman_ford_cost );
                 }
         }
 
-        erdos_ncount = calloc( max_erdos_n + 1, sizeof ( int ) );
-        for ( i = 0; i < nvertices; i++ ) {
-                erdos_ncount[ g->vertices[i]->bfs_distance ]++;
-        }
-
-        printf("%d\n", max_erdos_n);
-        for ( i = 1; i < max_erdos_n + 1; i++ ) {
-                printf("%d\n", erdos_ncount[i]);
-        }
-
-        free( erdos_ncount );
-        free_graph( g );
-        return 0;
-}
-
-int main(void) {
-        snd_project();
+        free_graph(g);
         return 0;
 }
 
