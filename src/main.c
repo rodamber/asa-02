@@ -41,7 +41,7 @@ Edge *new_edge( Vertex *in, Vertex *out, Edge *adjacent ) {
 
         e->in       = in;
         e->out      = out;
-        e->adjacent = e;
+        e->adjacent = adjacent;
 
         return e;
 }
@@ -171,6 +171,7 @@ void bfs( Graph *g, Vertex *src ) {
                                 v->bfs_color       = GRAY;
                                 v->bfs_distance    = u->bfs_distance + 1;
                                 v->bfs_predecessor = u;
+                                enqueue( q, v );
                         }
                 }
                 u->bfs_color = BLACK;
@@ -182,7 +183,7 @@ void bfs( Graph *g, Vertex *src ) {
  * Main, where the action happens.
  ******************************************************************************/
 
-int main(void) {
+int fst_project(void) {
         int i, max_erdos_n;
         int nvertices, nedges, erdos;
 
@@ -199,7 +200,7 @@ int main(void) {
                 add_edge( g, v - 1, u - 1 );
         }
 
-        bfs( g, g->vertices[erdos] ); /* FIXME Infinite cycle. */
+        bfs( g, g->vertices[erdos - 1] );
 
         for ( i = 0, max_erdos_n = 0; i < nvertices; i++ ) {
                 if ( g->vertices[i]->bfs_distance > max_erdos_n ) {
@@ -213,15 +214,18 @@ int main(void) {
         }
 
         printf("%d\n", max_erdos_n);
-        for (i = 1; i < max_erdos_n + 1; i++) {
+        for ( i = 1; i < max_erdos_n + 1; i++ ) {
                 printf("%d\n", erdos_ncount[i]);
         }
 
         free( erdos_ncount );
-        /*free_graph( g ); FIXME Double free or corruption. */
+        free_graph( g );
         return 0;
 }
 
+int main(void) {
+    return 0;
+}
 
 
 
