@@ -3,7 +3,7 @@
 #include <stdlib.h>
 
 /*******************************************************************************
- * Graph implementation.
+ * Graph implementation - Vertex.
  ******************************************************************************/
 
 typedef struct Vertex {
@@ -18,6 +18,12 @@ typedef struct Vertex {
         int             bfs_distance;
         struct Vertex   *bfs_predecessor;
 } Vertex;
+
+typedef Vertex Data;
+
+/*******************************************************************************
+ * Graph implementation - Edge.
+ ******************************************************************************/
 
 typedef struct Edge {
         int             visited;
@@ -45,6 +51,10 @@ Edge *new_edge( Vertex *in, Vertex *out, Edge *adjacent ) {
 
         return e;
 }
+
+/*******************************************************************************
+ * Graph implementation - Graph.
+ ******************************************************************************/
 
 typedef struct Graph {
         struct Vertex   **vertices;
@@ -127,8 +137,6 @@ void foreach_adjacent_edge( Vertex *v, void (*f)( Edge *, void * ), void *f_data
 /*******************************************************************************
  * Queue implementation.
  ******************************************************************************/
-
-typedef Vertex Data;
 
 typedef struct Qnode {
         Data            *data;
