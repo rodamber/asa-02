@@ -310,6 +310,8 @@ void bellman_ford( Graph *g, Vertex *src ) {
         fnc_data->graph = g;
         foreach_edge( g, &finalize_neg_cycles, (void *) fnc_data );
 
+        src->bellman_ford_cost = 0;
+
         free( r_data );
         free( fnc_data );
 }
