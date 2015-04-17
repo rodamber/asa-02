@@ -255,6 +255,10 @@ void bellman_ford_initialize_vertex( Vertex *v, void *null ) {
         v->bellman_ford_predecessor = NULL;
 }
 
+void bellman_ford_initialize_edge( Edge *e, void *null ) {
+        e->visited = 0;
+}
+
 void initialize_single_source( Graph *g, Vertex *src ) {
         foreach_vertex( g, &bellman_ford_initialize_vertex, (void *) NULL );
         src->bellman_ford_cost = 0;
@@ -287,8 +291,11 @@ void finalize_neg_cycles( Edge *e, void *fnc_data) {
 
         if ( v->bellman_ford_cost > sum( u->bellman_ford_cost, e->bellman_ford_weight) ) {
                 /* There is a negative cycle. */
-                v->bellman_ford_cost = INT_MIN;
-                bfs_bellman_ford( g, v );
+                if ( !e->visited  ) {
+                        v->bellman_ford_cost = INT_MIN;
+                        e->visited = 1;
+                        bfs_bellman_ford( g, v );
+                }
         }
 }
 
@@ -297,6 +304,7 @@ void bellman_ford( Graph *g, Vertex *src ) {
         relax_data *r_data;
         finalize_neg_cycles_data *fnc_data;
 
+        foreach_edge( g, &bellman_ford_initialize_edge, (void *) NULL );
         initialize_single_source( g, src );
 
         r_data = malloc( sizeof ( relax_data ) );
