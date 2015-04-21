@@ -19,8 +19,6 @@ typedef struct Vertex {
         struct Vertex   *bfs_predecessor;
 } Vertex;
 
-typedef Vertex Data;
-
 /*******************************************************************************
  * Graph implementation - Edge.
  ******************************************************************************/
@@ -139,11 +137,11 @@ void foreach_adjacent_edge( Vertex *v, void (*f)( Edge *, void * ), void *f_data
  ******************************************************************************/
 
 typedef struct Qnode {
-        Data            *data;
+        void            *data;
         struct Qnode    *next;
 } Qnode;
 
-struct Qnode *new_qnode( Data *d ) {
+struct Qnode *new_qnode( void *d ) {
         Qnode *qn = malloc( sizeof ( Qnode ) );
         qn->data  = d;
         qn->next  = NULL;
@@ -162,7 +160,7 @@ struct Queue *new_queue() {
         return q;
 }
 
-void enqueue ( Queue *q, Data *d ) {
+void enqueue ( Queue *q, void *d ) {
         Qnode *qn = new_qnode( d );
 
         if ( q->first ) {
@@ -173,8 +171,8 @@ void enqueue ( Queue *q, Data *d ) {
         }
 }
 
-Data *dequeue( Queue *q ) {
-        Data  *d   = q->first->data;
+void *dequeue( Queue *q ) {
+        void  *d   = q->first->data;
         Qnode *tmp = q->first;
 
         q->first = q->first->next;
@@ -191,7 +189,10 @@ int is_empty( Queue *q ) {
 }
 
 /*******************************************************************************
- * Breadth-First Search (Cormen, Leiserson, Rivest, and Stein, 3rd ed., p. 595).
+ * Breadth-First Search
+ *
+ * Modified to mark vertices in or that come out of a negative cycle with a
+ * shortest-path distance of INT_MIN in the Bellman-Ford algorithm.
  ******************************************************************************/
 
 #define WHITE 0
@@ -210,18 +211,21 @@ void grayify( Edge *e, void *queue ) {
         Vertex *v = e->out;
 
         if ( v->bfs_color == WHITE ) {
-                v->bfs_color         = GRAY;
-                v->bfs_distance      = u->bfs_distance + 1;
-                v->bfs_predecessor   = u;
-                v->bellman_ford_cost = INT_MIN;
-                enqueue( q, v );
+                if ( !v->adjacent || !v->adjacent->visited ) {
+                        v->bfs_color         = GRAY;
+                        v->bfs_distance      = u->bfs_distance + 1;
+                        v->bfs_predecessor   = u;
+                        v->bellman_ford_cost = INT_MIN;
+                        enqueue( q, v );
+                        e->visited = 1;
+                }
         }
 }
 
 void bfs_bellman_ford( Graph *g, Vertex *src ) {
         Queue *q = new_queue();
 
-        foreach_vertex( g, &bfs_initialize_vertex, (void *) NULL );
+        foreach_vertex( g, &bfs_initialize_vertex, NULL );
         src->bfs_color         = GRAY;
         src->bfs_distance      = 0;
         src->bellman_ford_cost = INT_MIN;
@@ -229,7 +233,7 @@ void bfs_bellman_ford( Graph *g, Vertex *src ) {
         enqueue( q, src );
         while ( !is_empty( q ) ) {
                 Vertex *u    = dequeue( q );
-                foreach_adjacent_edge( u, &grayify, (void *) q);
+                foreach_adjacent_edge( u, &grayify, q);
                 u->bfs_color = BLACK;
         }
         free(q);
@@ -253,6 +257,7 @@ int sum( int a, int b ) {
 void bellman_ford_initialize_vertex( Vertex *v, void *null ) {
         v->bellman_ford_cost        = INT_MAX; /* Hackish, but works. */
         v->bellman_ford_predecessor = NULL;
+        v->visited                  = 0;
 }
 
 void bellman_ford_initialize_edge( Edge *e, void *null ) {
@@ -260,7 +265,8 @@ void bellman_ford_initialize_edge( Edge *e, void *null ) {
 }
 
 void initialize_single_source( Graph *g, Vertex *src ) {
-        foreach_vertex( g, &bellman_ford_initialize_vertex, (void *) NULL );
+        foreach_vertex( g, &bellman_ford_initialize_vertex, NULL );
+        src->visited           = 1;
         src->bellman_ford_cost = 0;
 }
 
@@ -276,6 +282,7 @@ void relax( Edge *e, void *r_data ) {
                 v->bellman_ford_cost = sum( u->bellman_ford_cost, e->bellman_ford_weight );
                 v->bellman_ford_predecessor = u;
 
+                v->visited                     = 1;
                 ((relax_data*)r_data)->changes = 1;
         }
 }
@@ -293,30 +300,41 @@ void finalize_neg_cycles( Edge *e, void *fnc_data) {
                 /* There is a negative cycle. */
                 if ( !e->visited  ) {
                         v->bellman_ford_cost = INT_MIN;
-                        e->visited = 1;
+                        e->visited           = 1;
                         bfs_bellman_ford( g, v );
                 }
         }
 }
 
 void bellman_ford( Graph *g, Vertex *src ) {
-        int i;
-        relax_data *r_data;
+        int i, j;
+        relax_data               *r_data;
         finalize_neg_cycles_data *fnc_data;
 
-        foreach_edge( g, &bellman_ford_initialize_edge, (void *) NULL );
+        foreach_edge( g, &bellman_ford_initialize_edge, NULL );
         initialize_single_source( g, src );
 
         r_data = malloc( sizeof ( relax_data ) );
         r_data->changes = 1;
         for ( i = 0; i < g->size - 1 && r_data->changes; i++ ) {
                 r_data->changes = 0;
-                foreach_edge( g, &relax, (void *) r_data );
+                for ( j = 0; j < g->size; j++ ) {
+                        Vertex *v = get_vertex( g, j );
+                        /*
+                         * If v has a distance value that has not changed since
+                         * the last time its out-edges were relaxed, there is no
+                         * need to relax these edges a second time.
+                         */
+                        if ( v->visited ) {
+                                foreach_adjacent_edge( v, &relax, r_data );
+                                v->visited = 0;
+                        }
+                }
         }
 
         fnc_data = malloc( sizeof ( finalize_neg_cycles_data ) );
         fnc_data->graph = g;
-        foreach_edge( g, &finalize_neg_cycles, (void *) fnc_data );
+        foreach_edge( g, &finalize_neg_cycles, fnc_data );
 
         free( r_data );
         free( fnc_data );
