@@ -107,28 +107,29 @@ Vertex *get_vertex( Graph *g, int key ) {
         return g->vertices[key];
 }
 
-void foreach_vertex( Graph *g, void (*f)( Vertex *, void * ), void *f_data ) {
-        int i;
-        for ( i = 0; i < g->size; i++ ) {
-                f( g->vertices[i], f_data );
+void foreach_vertex( Graph *g, int (*f)( Vertex *, void * ), void *f_data ) {
+        int i, ok = 1;
+        for ( i = 0; i < g->size && ok; i++ ) {
+                ok = f( g->vertices[i], f_data );
         }
 }
 
-void foreach_edge( Graph *g, void (*f)( Edge *, void * ), void *f_data ) {
-        int i;
-        for ( i = 0; i < g->size; i++ ) {
+void foreach_edge( Graph *g, int (*f)( Edge *, void * ), void *f_data ) {
+        int i, ok = 1;
+        for ( i = 0; i < g->size && ok; i++ ) {
                 Edge *e;
-                for ( e = g->vertices[i]->adjacent; e; e = e->adjacent ) {
-                        f( e, f_data );
+                for ( e = g->vertices[i]->adjacent; e && ok; e = e->adjacent ) {
+                        ok = f( e, f_data );
                 }
         }
 
 }
 
-void foreach_adjacent_edge( Vertex *v, void (*f)( Edge *, void * ), void *f_data ) {
+void foreach_adjacent_edge( Vertex *v, int (*f)( Edge *, void * ), void *f_data ) {
         Edge *e;
-        for ( e = v->adjacent; e; e = e->adjacent ) {
-                f( e, f_data );
+        int ok = 1;
+        for ( e = v->adjacent; e && ok; e = e->adjacent ) {
+                ok = f( e, f_data );
         }
 }
 
@@ -199,19 +200,20 @@ int is_empty( Queue *q ) {
 #define GRAY  1
 #define BLACK 2
 
-void bfs_initialize_vertex( Vertex *v, void *null ) {
+int bfs_initialize_vertex( Vertex *v, void *null ) {
         v->bfs_color       = WHITE;
         v->bfs_distance    = INT_MAX; /* Hackish, but works. */
         v->bfs_predecessor = NULL;
+        return 1;
 }
 
-void grayify( Edge *e, void *queue ) {
+int grayify( Edge *e, void *queue ) {
         Queue  *q = (Queue *) queue;
         Vertex *u = e->in;
         Vertex *v = e->out;
 
         if ( v->bfs_color == WHITE ) {
-                if ( !v->adjacent || !v->adjacent->visited ) {
+                if ( !v->adjacent || !v->adjacent->visited ) { /* FIXME */
                         v->bfs_color         = GRAY;
                         v->bfs_distance      = u->bfs_distance + 1;
                         v->bfs_predecessor   = u;
@@ -220,6 +222,7 @@ void grayify( Edge *e, void *queue ) {
                         e->visited = 1;
                 }
         }
+        return 1;
 }
 
 void bfs_bellman_ford( Graph *g, Vertex *src ) {
@@ -254,14 +257,16 @@ int sum( int a, int b ) {
         return a + b;
 }
 
-void bellman_ford_initialize_vertex( Vertex *v, void *null ) {
+int bellman_ford_initialize_vertex( Vertex *v, void *null ) {
         v->bellman_ford_cost        = INT_MAX; /* Hackish, but works. */
         v->bellman_ford_predecessor = NULL;
         v->visited                  = 0;
+        return 1;
 }
 
-void bellman_ford_initialize_edge( Edge *e, void *null ) {
+int bellman_ford_initialize_edge( Edge *e, void *null ) {
         e->visited = 0;
+        return 1;
 }
 
 void initialize_single_source( Graph *g, Vertex *src ) {
@@ -274,7 +279,7 @@ typedef struct {
         int changes;
 } relax_data;
 
-void relax( Edge *e, void *r_data ) {
+int relax( Edge *e, void *r_data ) {
         Vertex *u = e->in;
         Vertex *v = e->out;
 
@@ -285,13 +290,14 @@ void relax( Edge *e, void *r_data ) {
                 v->visited                     = 1;
                 ((relax_data*)r_data)->changes = 1;
         }
+        return 1;
 }
 
 typedef struct {
         Graph  *graph;
 } finalize_neg_cycles_data;
 
-void finalize_neg_cycles( Edge *e, void *fnc_data) {
+int finalize_neg_cycles( Edge *e, void *fnc_data) {
         Vertex *u = e->in;
         Vertex *v = e->out;
         Graph  *g = ((finalize_neg_cycles_data*)fnc_data)->graph;
@@ -304,6 +310,7 @@ void finalize_neg_cycles( Edge *e, void *fnc_data) {
                         bfs_bellman_ford( g, v );
                 }
         }
+        return 1;
 }
 
 void bellman_ford( Graph *g, Vertex *src ) {
