@@ -213,7 +213,7 @@ int grayify( Edge *e, void *queue ) {
         Vertex *v = e->out;
 
         if ( v->bfs_color == WHITE ) {
-                if ( v->bellman_ford_cost != INT_MIN ) { /* FIXME */
+                if ( v->bellman_ford_cost != INT_MIN ) {
                         v->bfs_color         = GRAY;
                         v->bfs_distance      = u->bfs_distance + 1;
                         v->bfs_predecessor   = u;
