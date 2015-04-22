@@ -45,15 +45,15 @@ vértices representam as localidades e cujas arestas representam as conexões
 entre as localidades. No último ciclo do algoritmo, caso se verifique que ainda
 seria possível relaxar uma determinada aresta (\textit{u}, \textit{v}), então é
 feita uma procura em largura primeiro (BFS) com início em \textit{v}, marcando a
-estimativa de caminho mais curto de cada vértice a $-\]infty$, o que quer dizer
+estimativa de caminho mais curto de cada vértice a $-\infty$, o que quer dizer
 que é um vértice "I".
 
 \subsection{A Representação}
 \paragraph{}
 Cada localidade é representada por um inteiro. A representação do grafo é em
-listas de adjacências. Mais pormenorizadamente, um grafo é um estrutura composta
-por um vector de ponteiros para vértices e por um inteiro que indica o seu
-número de vértices (linhas 57-60). Cada vértice é uma estrutura com vários
+listas de adjacências. Mais pormenorizadamente, um grafo é uma estrutura
+composta por um vector de ponteiros para vértices e por um inteiro que indica o
+seu número de vértices (linhas 57-60). Cada vértice é uma estrutura com vários
 elementos, entre eles uma chave que o representa e um ponteiro para uma aresta
 adjacente (linhas 9-20). Cada aresta depois tem um ponteiro para a aresta
 adjacente seguinte (linhas 26-34). Propriedades características de cada
@@ -61,6 +61,10 @@ algoritmo (como estimativa de caminho mais curto no algoritmo de Bellman-Ford ou
 cor na BFS) estão nas estruturas dos vértices e das arestas (em vez de haverem
 vectores para cada propriedade) para ser mais fácil aceder a essas propriedades
 nas várias partes do programa.
+\paragraph{}
+Para representar $-\infty$ e $+\infty$, foram utilizados INT\_MIN e INT\_MAX,
+respectivamente. Para acomodar esta escolha, foi criada uma função de soma
+(linhas 254-258), de forma a evitar \textit{overflows}.
 
 \subsection{O Algoritmo}
 \paragraph{}
