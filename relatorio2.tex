@@ -1,0 +1,64 @@
+\documentclass[12pt, a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[portuguese]{babel}
+\usepackage{authblk}
+\usepackage{enumitem}
+
+\setlist[description]{labelindent=1cm}
+
+\title{\textbf{Relatório do 1º projecto de ASA}}
+\author{Rodrigo André Moreira Bernardo \\ ist178942}
+\affil{Instituto Superior Técnico}
+
+\date{\today}
+
+
+\begin{document}
+\maketitle
+
+\section{O Problema}
+
+\subsection{Introdução}
+\paragraph{}
+A empresa Coelho e Caracol, Lda. faz transporte de mercadorias. O Sr. Coelho
+trata do transporte, enquanto o Sr. Caracol fica no escritório a fazer o
+planeamento das rotas, sendo que cada uma consiste numa sequência de
+localidades. Cada conexão entre localidades tem a si associada um valor de
+perda, que resulta de subtrair a receita ao custo.
+
+\subsection{Objectivo}
+\paragraph{}
+Dado um input que identifique a sede da empresa, o número de localidades e as
+conexões entre si, assim como o valor de perda de cada uma, determinar a perda
+mínima desde a sede até cada localidade. O output deverá indicar para cada
+localidade o respectivo valor de perda. No entanto, caso uma localidade seja
+impossível de alcançar, então o seu valor de perda deve ser "U" e, caso seja
+impossível definir essa perda, então dizemos que o seu valor de perda é "I".
+
+\section{A Solução}
+\paragraph{}
+O programa foi implementado em linguagem C.
+A solução passa por executar o algoritmo de Bellman-Ford para caminhos mais
+curtos sobre um grafo cujos nós representam as localidades e cujos arcos
+representam as conexões entre as localidades.
+
+\subsection{A Representação}
+\paragraph{}
+
+\subsection{O Algoritmo}
+\paragraph{}
+
+\section{Análise Teórica}
+\subsection{Avaliação}
+\paragraph{}
+
+\section{Análise Experimental}
+\paragraph{}
+
+\section{Referências}
+\paragraph{}
+\indent[1] Enunciado do primeiro projecto de ASA.
+
+\end{document}
