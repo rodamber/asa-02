@@ -213,7 +213,7 @@ int grayify( Edge *e, void *queue ) {
         Vertex *v = e->out;
 
         if ( v->bfs_color == WHITE ) {
-                if ( !v->adjacent || !v->adjacent->visited ) { /* FIXME */
+                if ( v->bellman_ford_cost != INT_MIN ) { /* FIXME */
                         v->bfs_color         = GRAY;
                         v->bfs_distance      = u->bfs_distance + 1;
                         v->bfs_predecessor   = u;
@@ -271,6 +271,7 @@ int bellman_ford_initialize_edge( Edge *e, void *null ) {
 
 void initialize_single_source( Graph *g, Vertex *src ) {
         foreach_vertex( g, &bellman_ford_initialize_vertex, NULL );
+        foreach_edge  ( g, &bellman_ford_initialize_edge,   NULL );
         src->visited           = 1;
         src->bellman_ford_cost = 0;
 }
@@ -318,10 +319,9 @@ void bellman_ford( Graph *g, Vertex *src ) {
         relax_data               *r_data;
         finalize_neg_cycles_data *fnc_data;
 
-        foreach_edge( g, &bellman_ford_initialize_edge, NULL );
         initialize_single_source( g, src );
 
-        r_data = malloc( sizeof ( relax_data ) );
+        r_data          = malloc( sizeof ( relax_data ) );
         r_data->changes = 1;
         for ( i = 0; i < g->size - 1 && r_data->changes; i++ ) {
                 r_data->changes = 0;
@@ -338,8 +338,7 @@ void bellman_ford( Graph *g, Vertex *src ) {
                         }
                 }
         }
-
-        fnc_data = malloc( sizeof ( finalize_neg_cycles_data ) );
+        fnc_data        = malloc( sizeof ( finalize_neg_cycles_data ) );
         fnc_data->graph = g;
         foreach_edge( g, &finalize_neg_cycles, fnc_data );
 
