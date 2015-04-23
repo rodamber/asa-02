@@ -333,6 +333,18 @@ void bellman_ford( Graph *g, Vertex *src ) {
  * Main, where the magic happens.
  ******************************************************************************/
 
+int print_costs( Vertex *v, void *null ) {
+        char c = v->bellman_ford_cost == INT_MIN ? 'I' :
+                 v->bellman_ford_cost == INT_MAX ? 'U' : '\0';
+
+        if ( c == 'I' || c == 'U' ) {
+                printf( "%c\n", c );
+        } else {
+                printf( "%d\n", v->bellman_ford_cost );
+        }
+        return 1;
+}
+
 int main(void) {
         int i;
         int nlocations, ncosts, headquarters_key;
@@ -362,18 +374,7 @@ int main(void) {
         bellman_ford( g, get_vertex( g, headquarters_key - 1 ) );
 
         /* Print output. */
-        for ( i = 0; i < nlocations; i++ ) {
-                Vertex *v = get_vertex( g, i );
-
-                char c = v->bellman_ford_cost == INT_MIN ? 'I' :
-                         v->bellman_ford_cost == INT_MAX ? 'U' : '\0';
-
-                if ( c == 'I' || c == 'U' ) {
-                        printf( "%c\n", c );
-                } else {
-                        printf( "%d\n", v->bellman_ford_cost );
-                }
-        }
+        foreach_vertex( g, &print_costs, NULL );
 
         free_graph(g);
         return 0;
