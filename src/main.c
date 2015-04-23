@@ -212,15 +212,12 @@ int grayify( Edge *e, void *queue ) {
         Vertex *u = e->in;
         Vertex *v = e->out;
 
-        if ( v->bfs_color == WHITE ) {
-                if ( v->bellman_ford_cost != INT_MIN ) {
-                        v->bfs_color         = GRAY;
-                        v->bfs_distance      = u->bfs_distance + 1;
-                        v->bfs_predecessor   = u;
-                        v->bellman_ford_cost = INT_MIN;
-                        enqueue( q, v );
-                        e->visited = 1;
-                }
+        if ( v->bfs_color == WHITE && v->bellman_ford_cost != INT_MIN ) {
+                v->bfs_color         = GRAY;
+                v->bfs_distance      = u->bfs_distance + 1;
+                v->bfs_predecessor   = u;
+                v->bellman_ford_cost = INT_MIN;
+                enqueue( q, v );
         }
         return 1;
 }
@@ -264,14 +261,8 @@ int bellman_ford_initialize_vertex( Vertex *v, void *null ) {
         return 1;
 }
 
-int bellman_ford_initialize_edge( Edge *e, void *null ) {
-        e->visited = 0;
-        return 1;
-}
-
 void initialize_single_source( Graph *g, Vertex *src ) {
         foreach_vertex( g, &bellman_ford_initialize_vertex, NULL );
-        foreach_edge  ( g, &bellman_ford_initialize_edge,   NULL );
         src->visited           = 1;
         src->bellman_ford_cost = 0;
 }
@@ -305,9 +296,8 @@ int finalize_neg_cycles( Edge *e, void *fnc_data) {
 
         if ( v->bellman_ford_cost > sum( u->bellman_ford_cost, e->bellman_ford_weight) ) {
                 /* There is a negative cycle. */
-                if ( !e->visited  ) {
+                if ( v->bellman_ford_cost != INT_MIN ) {
                         v->bellman_ford_cost = INT_MIN;
-                        e->visited           = 1;
                         bfs_bellman_ford( g, v );
                 }
         }
@@ -338,12 +328,14 @@ void bellman_ford( Graph *g, Vertex *src ) {
                         }
                 }
         }
-        fnc_data        = malloc( sizeof ( finalize_neg_cycles_data ) );
-        fnc_data->graph = g;
-        foreach_edge( g, &finalize_neg_cycles, fnc_data );
 
+        if ( r_data->changes ) {
+                fnc_data        = malloc( sizeof ( finalize_neg_cycles_data ) );
+                fnc_data->graph = g;
+                foreach_edge( g, &finalize_neg_cycles, fnc_data );
+                free( fnc_data );
+        }
         free( r_data );
-        free( fnc_data );
 }
 
 /*******************************************************************************

@@ -43,10 +43,10 @@ O programa foi implementado em linguagem C.  A solução passa por executar o
 algoritmo de Bellman-Ford para caminhos mais curtos sobre um grafo cujos
 vértices representam as localidades e cujas arestas representam as conexões
 entre as localidades. No último ciclo do algoritmo, caso se verifique que ainda
-seria possível relaxar uma determinada aresta (\textit{u}, \textit{v}), então é
-feita uma procura em largura primeiro (BFS) com início em \textit{v}, marcando a
-estimativa de caminho mais curto de cada vértice a $-\infty$, o que quer dizer
-que é um vértice "I".
+seria possível relaxar uma determinada aresta (\textit{u}, \textit{v}), ou seja,
+se existir ciclos negativos, então é feita uma procura em largura primeiro (BFS)
+com início em \textit{v}, marcando a estimativa de caminho mais curto de cada
+vértice visitado a $-\infty$, o que significa que é um vértice "I".
 
 \subsection{A Representação}
 \paragraph{}
@@ -68,6 +68,17 @@ respectivamente. Para acomodar esta escolha, foi criada uma função de soma
 
 \subsection{O Algoritmo}
 \paragraph{}
+O algoritmo é uma versão modificada do algoritmo de Bellman-Ford. No entanto,
+foram feitas duas optimizações. A primeira passa por terminar o algoritmo caso
+tenha havido uma iteração onde não se verificasse relaxamento de arestas. A
+segunda passa por, a cada iteração, relaxar apenas arestas cujo vértice da qual
+partem tenho visto a sua estimativa de caminho mais curto alterada desde a
+última vez que essas arestas foram relaxadas.
+\paragraph{}
+Em relação à detecção dos vértices "I", é também verificado se a estimativa de
+caminho mais curto de cada vértice encontrado não é já $-\infty$.  Se for,
+termina-se a BFS (ou nem sequer se inicia), de forma a diminuir o número de
+pesquisas redundantes.
 
 \section{Análise Teórica}
 \subsection{Avaliação}
