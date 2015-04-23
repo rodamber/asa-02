@@ -109,6 +109,13 @@ ciclo "atinge" e alterar a sua estimativa de caminho mais curto para
 $-\infty$. É feita uma BFS para cada ciclo negativo que existir. Cada BFS é
 \textit{O(V + E)}.
 
+\paragraph{}
+Imprimir o output é simples de analisar. Temos um ciclo para percorrer todos os
+vértices. Considerando as operações de impressão como sendo \textit{O(1)}, então
+imprimir todo o output é \textit{O(V)}.
+
+\paragraph{}
+No final temos \textit{O(V + E) + O(VE) + O(V) = O(VE)} para o tempo.
 
 \section{Análise Experimental}
 \paragraph{}
