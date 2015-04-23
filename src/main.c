@@ -87,20 +87,11 @@ void free_graph( Graph *g ) {
         free( g );
 }
 
-void add_edge( Graph *g, int in, int out ) {
+Edge *add_edge( Graph *g, int in, int out ) {
         Vertex *u = g->vertices[in];
         Vertex *v = g->vertices[out];
         u->adjacent = new_edge( u, v, u->adjacent );
-}
-
-Edge *get_edge( Graph *g, int in, int out ) {
-        Edge *e;
-        for ( e = g->vertices[in]->adjacent; e; e = e->adjacent ) {
-                if ( e->out->key == out ) {
-                        return e;
-                }
-        }
-        return (Edge *) NULL;
+        return u->adjacent;
 }
 
 Vertex *get_vertex( Graph *g, int key ) {
@@ -361,8 +352,7 @@ int main(void) {
                 if ( scanf( "%u %u ", &u, &v ) != 2 ) return -1;
                 w = fgets(w, weight_max_digits, stdin);
 
-                add_edge( g, u - 1, v - 1 );
-                e = get_edge( g, u - 1, v - 1 );
+                e = add_edge( g, u - 1, v - 1 );
                 e->bellman_ford_weight = strtol( w, NULL, 10 );
 
                 free( w );
