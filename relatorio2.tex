@@ -5,6 +5,8 @@
 \usepackage[portuguese]{babel}
 \usepackage{authblk}
 \usepackage{enumitem}
+\usepackage{graphicx}
+\graphicspath{ {.} }
 
 \setlist[description]{labelindent=1cm}
 
@@ -106,8 +108,8 @@ relaxamentos todos os vértices têm as suas estimativas de caminho mais curto
 correctas, a não ser que existam ciclos negativos. Nesta versão, quando se
 detectam ciclos negativos é feita uma BFS para atingir todos os vértices que o
 ciclo "atinge" e alterar a sua estimativa de caminho mais curto para
-$-\infty$. É feita uma BFS para cada ciclo negativo que existir. Cada BFS é
-\textit{O(V + E)}.
+$-\infty$. É feita apenas uma BFS para cada ciclo negativo que existir, pelo que
+o conjunto de todas BFS tem complexidade \textit{O(V + E)}.
 
 \paragraph{}
 Imprimir o output é simples de analisar. Temos um ciclo para percorrer todos os
@@ -119,6 +121,7 @@ No final temos \textit{O(V + E) + O(VE) + O(V) = O(VE)} para o tempo.
 
 \section{Análise Experimental}
 \paragraph{}
+\includegraphics{times_graph}
 
 \section{Referências}
 \paragraph{}
