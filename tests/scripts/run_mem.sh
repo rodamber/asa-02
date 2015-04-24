@@ -1,8 +1,8 @@
 #!/bin/bash
 
-exec &> mems.csv
+exec &> ../data/mems.csv
 
-for file in graphs/in/*
+for file in ../graphs/in/*
 do
     exec < $file
 
@@ -10,6 +10,6 @@ do
 
     echo -n `expr $V \* $E`
     echo -n ";"
-    valgrind --log-file="val.out" ../a.out < $file > /dev/null
+    valgrind --log-file="val.out" ../../src/a.out < $file > /dev/null
     head -n 10 val.out | tail -1 | cut -d " " -f 11
 done

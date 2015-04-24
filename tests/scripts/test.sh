@@ -2,13 +2,14 @@
 
 echo "Testing all tests"
 
-make -C ..;
+make -C ../../src;
 
 echo "**************************************************"
-for i in prof/*.in;
+for i in ../graphs/in/*;
     do echo "=== Testing $i";
-    cat $i | ../a.out > myout.d/`basename $i .in`.myout;
-    diff myout.d/`basename $i .in`.myout prof/`basename $i .in`.out;
+    cat $i | ../../src/a.out > /tmp/`basename $i .in`.myout;
+    #diff /tmp/`basename $i .in`.myout ../graphs/out/`basename $i .in`.out;
+    rm /tmp/`basename $i .in`.myout
 done
 echo "**************************************************"
 
