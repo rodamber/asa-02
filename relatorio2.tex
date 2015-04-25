@@ -6,11 +6,15 @@
 \usepackage{authblk}
 \usepackage{enumitem}
 \usepackage{graphicx}
-\graphicspath{ {.} }
+\usepackage{tikz}
+\usepackage{pgfplots}
+
+\graphicspath{{./plots/}}
+\pgfplotsset{compat=1.10,width=10cm}
 
 \setlist[description]{labelindent=1cm}
 
-\title{\textbf{Relatório do 1º projecto de ASA}}
+\title{\textbf{Relatório do 2º projecto de ASA}}
 \author{Rodrigo André Moreira Bernardo \\ ist178942}
 \affil{Instituto Superior Técnico}
 
@@ -61,7 +65,7 @@ elementos, entre eles uma chave que o representa e um ponteiro para uma aresta
 adjacente (linhas 9-20). Cada aresta depois tem um ponteiro para a aresta
 adjacente seguinte (linhas 26-34). Propriedades características de cada
 algoritmo (como estimativa de caminho mais curto no algoritmo de Bellman-Ford ou
-cor na BFS) estão nas estruturas dos vértices e das arestas (em vez de haverem
+cor na BFS) estão nas estruturas dos vértices e das arestas (em vez de existirem
 vectores para cada propriedade) para ser mais fácil aceder a essas propriedades
 nas várias partes do programa.
 \paragraph{}
@@ -84,47 +88,109 @@ termina-se a BFS (ou nem sequer se inicia), de forma a diminuir o número de
 pesquisas redundantes.
 
 \section{Análise Teórica}
-\subsection{Avaliação}
 \paragraph{}
 Sejam \textit{V} e \textit{E} o número de vértices e arestas do grafo,
 respectivamente.  O programa começa por ler as duas primeiras linhas do input,
 obtendo \textit{N}, o número de localidades, \textit{C}, o número de custos, e
 \textit{H}, um inteiro que representa a sede da empresa. Depois inicializa o
-grafo com \textit{V=N} vértices, que demora \textit{O(V)}. Ler as linhas
-restantes para adicionar as arestas é \textit{O(E)}, tendo em conta que
-adicionar uma nova aresta ao grafo é \textit{O(1)}, \textit{E=C}, e considerando
-que as operações de ler linhas e alocar memória são \textit{O(1)}. Até agora
-temos uma complexidade para o tempo de \textit{O(V + E)}.
+grafo com \textit{V=N} vértices, que demora O(V). Ler as linhas
+restantes para adicionar as arestas é O(E), tendo em conta que
+adicionar uma nova aresta ao grafo é O(1), \textit{E=C}, e considerando
+que as operações de ler linhas e alocar memória são O(1). Até agora
+temos uma complexidade para o tempo de O(V + E).
 
 \paragraph{}
 O algoritmo (modificado) de Bellman-Ford começa por inicializar todos os
-vértices, que é \textit{O(V)}. A seguir tem um ciclo com, no máximo,
-\textit{V-1} iterações, onde se aplica a operação de relaxar as arestas. No
-máximo, todos as arestas são relaxadas. Como relaxar um arco é \textit{O(1)},
-temos que o ciclo é \textit{O(VE)}. Depois, se tiverem ocorrido relaxamentos na
-iteração \textit{V-1}, o algoritmo verifica se existem ciclos negativos. O
-algoritmo de Bellman-Ford garante que após \textit{V-1} iterações de
+vértices, que é O(V). A seguir tem um ciclo com, no máximo,
+V-1 iterações, onde se aplica a operação de relaxar as arestas. No
+máximo, todos as arestas são relaxadas. Como relaxar um arco é O(1),
+temos que o ciclo é O(VE). Depois, se tiverem ocorrido relaxamentos na
+iteração V-1, o algoritmo verifica se existem ciclos negativos. O
+algoritmo de Bellman-Ford garante que após V-1 iterações de
 relaxamentos todos os vértices têm as suas estimativas de caminho mais curto
 correctas, a não ser que existam ciclos negativos. Nesta versão, quando se
 detectam ciclos negativos é feita uma BFS para atingir todos os vértices que o
-ciclo "atinge" e alterar a sua estimativa de caminho mais curto para
-$-\infty$. É feita apenas uma BFS para cada ciclo negativo que existir, pelo que
-o conjunto de todas BFS tem complexidade \textit{O(V + E)}.
+ciclo "atinge"\ e alterar a sua estimativa de caminho mais curto para $-\infty$.
+É feita apenas uma BFS para cada ciclo negativo que existir.  Concluí-se que o
+conjunto de todas BFS tem complexidade temporal O(V + E).
 
 \paragraph{}
-Imprimir o output é simples de analisar. Temos um ciclo para percorrer todos os
-vértices. Considerando as operações de impressão como sendo \textit{O(1)}, então
-imprimir todo o output é \textit{O(V)}.
+Imprimir o output é simples de analisar. Tem-se um ciclo para percorrer todos os
+vértices. Considerando as operações de impressão como sendo O(1),
+imprimir todo o output é O(V).
 
 \paragraph{}
-No final temos \textit{O(V + E) + O(VE) + O(V) = O(VE)} para o tempo.
+No final tem-se O(V + E) + O(VE) + O(V) = O(VE) para o tempo.
+
+\paragraph{}
+Em relação à complexidade espacial, excepto algumas alocações independentes do
+tamanho do input (que são, portanto, O(1)), apenas se fazem alocações a
+estruturas de dados com tamanho linear em \textit{V} e em \textit{E}, pelo que a
+complexidade espacial é O(V + E).
 
 \section{Análise Experimental}
 \paragraph{}
-\includegraphics{times_graph}
-
-\section{Referências}
+Com recurso ao gerador fornecido, o \textit{p2-gen}, foram criados 500 grafos,
+com um número de vértices entre 10 e 49910, sendo que, para cada grafo, se tem
+E=2V. Foram obtidos os tempos totais de execução com a ferramenta \textit{time}
+da \textit{BASH} e a memória ocupada com a ferramenta \textit{valgrind}.
 \paragraph{}
+Verifica-se que a memória ocupada é linear sobre V+E.
+Já em relação ao tempo de execução, o gráfico já não se assemelha tanto a uma
+linha, como se poderia esperar. No entanto, ao contrário da memória ocupada, o
+tempo de execução depende de factores externos, como a sobrecarga do computador.
+
+\paragraph{}
+
+\centering
+\begin{tikzpicture}[trim axis left, trim axis right]
+    \begin{axis}[
+        height=7cm,
+        width=0.8\textwidth,
+        enlargelimits=false,
+        title={Tempo de execução em função de VE},
+        xlabel={VE},
+        ylabel={Tempo de execução (s)},
+        scaled y ticks = false,
+        yticklabel style={/pgf/number format/fixed},
+        ymajorgrids=true,
+        grid style=dashed,
+    ]
+        \addplot+[
+            only marks,
+            scatter,
+            mark=x,
+            mark size=3pt,
+        ]
+        table{tests/data/times.dat};
+    \end{axis}
+\end{tikzpicture}
+
+\paragraph{}
+
+\centering
+\begin{tikzpicture}[trim axis left, trim axis right]
+    \begin{axis}[
+        height=7cm,
+        width=0.8\textwidth,
+        enlargelimits=false,
+        title={Memória ocupada em função de V + E},
+        xlabel={V+E},
+        scaled x ticks = base 10:-4,
+        every y tick scale label/.style={at={(-0.060,1)}},
+        ylabel={Memória ocupada (bytes)},
+        ymajorgrids=true,
+        grid style=dashed,
+    ]
+        \addplot+[
+            only marks,
+            scatter,
+            mark=x,
+            mark size=3pt,
+        ]
+        table{tests/data/mems.dat};
+    \end{axis}
+\end{tikzpicture}
 
 \end{document}
 
