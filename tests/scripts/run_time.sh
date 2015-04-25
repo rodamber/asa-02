@@ -1,6 +1,6 @@
 #!/bin/bash
 
-exec &> ../data/times.csv
+exec &> ../data/times.dat
 
 for file in ../graphs/in/*
 do
@@ -9,7 +9,7 @@ do
     read V E
 
     echo -n `expr $V \* $E`
-    echo -n ";"
+    echo -n " "
 
     TIMEFORMAT=%R
     time ../../src/a.out < $file > /dev/null
